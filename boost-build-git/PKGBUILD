@@ -1,0 +1,47 @@
+# Maintainer: Rohan Rao <rao dot rohan dot a at gmail dot com>
+
+pkgname=boost-build-git
+_gitname=build
+_pkgname=boost-build
+pkgver=r11512.e76de15b
+pkgrel=1
+pkgdesc='Boost.Build makes it easy to build C++ projects, everywhere.'
+arch=('any')
+url="http://www.boost.org/build/"
+license=('custom:boost')
+depends=('boost' 'gcc' 'python')
+conflicts=('boost-build' 'boost-build-nightly')
+source=("git+https://github.com/boostorg/build.git"
+        "http://www.boost.org/LICENSE_1_0.txt"
+        'boost-build.sh'
+        'boost-build.csh')
+md5sums=('SKIP'
+         'e4224ccaecb14d942c71d31bef20d78c'
+         '649d902d0e89c8e6e6e4f35401a493a3'
+         '682206f11cc826ad8bca5f79b2b98d47')
+
+pkgver() {
+  cd "${srcdir}/${_gitname}"
+
+  # Get the version number.
+  printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd "${srcdir}/${_gitname}"
+
+  ./bootstrap.sh
+}
+
+package() {
+  cd "${srcdir}/${_gitname}"
+
+  ./b2 install --prefix="${pkgdir}/opt/boost-build"
+
+  install -Dm644 "${srcdir}/boost-build.sh" "${pkgdir}/etc/profile.d/boost-build.sh"
+  install -Dm644 "${srcdir}/boost-build.csh" "${pkgdir}/etc/profile.d/boost-build.csh"
+
+  install -Dm644 "${srcdir}/LICENSE_1_0.txt" "${pkgdir}/usr/share/licenses/${_pkgname}/LICENSE"
+
+  echo "using gcc ;" > "${pkgdir}/etc/site-config.jam"
+}
