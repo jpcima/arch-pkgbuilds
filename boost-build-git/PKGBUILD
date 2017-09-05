@@ -11,6 +11,7 @@ url="http://www.boost.org/build/"
 license=('custom:boost')
 depends=('boost' 'gcc' 'python')
 conflicts=('boost-build' 'boost-build-nightly')
+backup=('etc/site-config.jam')
 source=("git+https://github.com/boostorg/build.git"
         "http://www.boost.org/LICENSE_1_0.txt"
         'boost-build.sh'
