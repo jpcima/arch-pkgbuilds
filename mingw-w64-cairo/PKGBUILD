@@ -1,0 +1,78 @@
+# Maintainer: pingplug <pingplug@foxmail.com>
+# Contributor: Schala Zeal <schalaalexiazeal@gmail.com>
+# Contributor: Xiao-Long Chen <chenxiaolong@cxl.epac.to>
+
+_pkgname=cairo
+_architectures="i686-w64-mingw32 x86_64-w64-mingw32"
+
+pkgname=mingw-w64-cairo
+pkgver=1.16.0
+pkgrel=1
+pkgdesc="2D graphics library with support for multiple output devices (mingw-w64)"
+arch=('any')
+url="https://cairographics.org"
+license=('LGPL' 'MPL')
+depends=('mingw-w64-pixman'
+         'mingw-w64-libpng')
+makedepends=('mingw-w64-configure')
+conflicts=("${pkgname}-bootstrap")
+replaces=("${pkgname}-bootstrap")
+options=('!strip' '!buildflags' 'staticlibs')
+source=("https://cairographics.org/releases/${_pkgname}-${pkgver}.tar.xz"
+        "0009-standalone-headers.mingw.patch"
+        "0026-create-argb-fonts.all.patch"
+        "0027-win32-print-fix-unbounded-surface-assertion.patch"
+        "cairo-disable-test-programs.patch")
+sha256sums=('5e7b29b3f113ef870d1e3ecf8adf21f923396401604bda16d44be45e66052331'
+            '234de8c5d4c28b03c19e638a353e8defb2de0367a634c002b0ea7d2877bd0756'
+            '6db6c44fbdb4926d09afa978fe80430186c4b7b7d255059602b1f94c6a079975'
+            '7e244c20eec8c7b287dbee1d34de178d9b0c419dc4c2b11c90eaf626c92bf781'
+            'd9ce3e96ae3a9c37ef8a4c196df57d4d5c012345d79f48fd20a6412350d7b45d')
+
+prepare() {
+  cd "${srcdir}/${_pkgname}-${pkgver}"
+  patch -p1 -i ${srcdir}/0009-standalone-headers.mingw.patch
+  patch -p1 -i ${srcdir}/0026-create-argb-fonts.all.patch
+  patch -p1 -i ${srcdir}/0027-win32-print-fix-unbounded-surface-assertion.patch
+  patch -p1 -i ${srcdir}/cairo-disable-test-programs.patch
+  autoreconf -fi
+}
+
+build() {
+  cd "${srcdir}/${_pkgname}-${pkgver}"
+  CFLAGS+=" -Wno-implicit-function-declaration"
+  for _arch in ${_architectures}; do
+    mkdir -p "build-${_arch}" && pushd "build-${_arch}"
+    ${_arch}-configure \
+      --enable-win32 \
+      --enable-win32-font \
+      --disable-fc \
+      --disable-ft \
+      --disable-gobject \
+      --enable-tee \
+      --disable-xlib \
+      --disable-xcb \
+      --disable-pdf \
+      --enable-ps \
+      --disable-svg \
+      --disable-gtk-doc \
+      --disable-gtk-doc-html \
+      ac_cv_prog
+    make
+    popd
+  done
+}
+
+package() {
+  cd "${srcdir}/${_pkgname}-${pkgver}"
+  for _arch in ${_architectures}; do
+    pushd "build-${_arch}"
+    make DESTDIR="${pkgdir}" install
+    find "${pkgdir}/usr/${_arch}" -name '*.dll' -exec ${_arch}-strip --strip-unneeded {} \;
+    find "${pkgdir}/usr/${_arch}" -name '*.a' -o -name '*.dll' | xargs ${_arch}-strip -g
+    rm -r "${pkgdir}/usr/${_arch}/share"
+    popd
+  done
+}
+
+# vim:set ts=2 sw=2 et:
